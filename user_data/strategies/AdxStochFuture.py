@@ -66,7 +66,7 @@ class AdxStochFutureStrategy(IStrategy):
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
         # "120": 0.0,  # exit after 120 minutes at break even
-        "0": 0.165,
+        "0": 0.0165,
     }
 
     # Optimal stoploss designed for the strategy.

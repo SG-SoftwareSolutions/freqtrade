@@ -68,11 +68,11 @@ class IchimokuStrategy1(IStrategy):
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
-    minimal_roi = {"0": 0.02}
+    minimal_roi = {"0": 0.03}
 
     # Optimal stoploss designed for the strategy.
     # This attribute will be overridden if the config file contains "stoploss".
-    stoploss = -0.10
+    stoploss = -0.08
 
     # Trailing stoploss
     trailing_stop = False
@@ -136,6 +136,8 @@ class IchimokuStrategy1(IStrategy):
                             ]
         """
         return []
+    
+    
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -172,8 +174,8 @@ class IchimokuStrategy1(IStrategy):
         dataframe["prev_tenkan_minus_kijun"] = ichimoku["tenkan_minus_kijun"].shift(1)
 
         # EMA - Exponential Moving Average
-        # dataframe["ema200"] = ta.EMA(dataframe, timeperiod=200)
-
+        dataframe["ema100"] = ta.EMA(dataframe, timeperiod=100)
+        dataframe["adx"] = ta.ADX(dataframe)
         """
         # first check if dataprovider is available
         if self.dp:
@@ -196,16 +198,18 @@ class IchimokuStrategy1(IStrategy):
         dataframe.loc[
             (
                 (qtpylib.crossed_above(dataframe["senkou_span_a"], dataframe["senkou_span_b"]))
-                & (dataframe["tenkan_minus_kijun"] > 0)
-                & (dataframe["rsi"] < 65)
+                # & (dataframe["tenkan_minus_kijun"] > 0)
+                # & (dataframe["rsi"] < 65)
+                & (qtpylib.crossed_above(dataframe["adx"], 25))
                 & (dataframe["close"] > dataframe["senkou_span_a"])
                 & (dataframe["volume"] > 0)
+                # & (qtpylib.crossed_above(dataframe["close"], dataframe["ema200"]))
                 # Make sure Volume is not 0
             ),
             "enter_long",
         ] = 1
 
-        print(dataframe)
+        # print(dataframe)
 
         # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
         """
@@ -234,6 +238,7 @@ class IchimokuStrategy1(IStrategy):
                 # (dataframe["macd"] < dataframe["macdsignal"])
                 # & (dataframe["macd"].shift(1) >= dataframe["macdsignal"]).shift(1)
                 # Make sure Volume is not 0
+                # (dataframe["ema100"] > dataframe["close"])
             ),  # Make sure Volume is not 0
             "exit_long",
         ] = 1

@@ -34,6 +34,8 @@ def ICHIMOKU(df: pd.DataFrame, tenkan_period: int, kijun_period: int) -> pd:
     df.drop(["rolling_min_senkou", "rolling_max_senkou"], axis=1, inplace=True)
     # Chikou Span : Confirmation Line
 
-    df["chikou_span"] = df["close"].shift(kijun_period)
+    df["chikou_span"] = df["close"].shift(-kijun_period)
+
+    df["senkou_span_b_kp"] = df["senkou_span_b"].shift(kijun_period)
 
     return df
