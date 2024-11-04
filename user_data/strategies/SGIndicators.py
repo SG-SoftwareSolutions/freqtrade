@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 def ICHIMOKU(df: pd.DataFrame, tenkan_period: int, kijun_period: int) -> pd:
@@ -31,11 +32,55 @@ def ICHIMOKU(df: pd.DataFrame, tenkan_period: int, kijun_period: int) -> pd:
     df["senkou_span_b"] = ((df["rolling_max_senkou"] + df["rolling_min_senkou"]) / 2).shift(
         kijun_period
     )
+
     df.drop(["rolling_min_senkou", "rolling_max_senkou"], axis=1, inplace=True)
     # Chikou Span : Confirmation Line
 
     df["chikou_span"] = df["close"].shift(-kijun_period)
 
     df["senkou_span_b_kp"] = df["senkou_span_b"].shift(kijun_period)
+
+    return df
+
+
+def VWAP(df: pd.DataFrame, cumulative_period: int = 20) -> pd:
+
+    high = df["high"]
+    low = df["low"]
+    close = df["close"]
+    volume = df["volume"]
+    df = df.dropna(subset=["high", "low", "close", "volume"])
+    typical_price = (high + low + close) / 3
+    df["Typical_Price_Volume"] = typical_price * volume
+    cumulative_typical_price_volume = (
+        df["Typical_Price_Volume"].rolling(window=cumulative_period).sum()
+    )
+    cumulative_volume = df["volume"].rolling(window=cumulative_period).sum()
+    vwap = cumulative_typical_price_volume / cumulative_volume.where(
+        cumulative_volume != 0, other=pd.NA
+    )
+    df["VWAP"] = vwap
+    return df
+
+
+def back_candles(df: pd.DataFrame, back_candles: int = 16) -> pd:
+
+    vwap = VWAP(df)
+    df["VWAP"] = vwap["VWAP"]
+
+    df["back_candles"] = False
+
+    if len(df) < back_candles:
+        df["back_candles"] = False
+        return df
+
+    for i in range(back_candles, len(df)):
+
+        previous_close = df["close"][i - back_candles : i]
+
+        previous_vwap = df["VWAP"][i - back_candles : i]
+
+        if all(previous_close > previous_vwap):
+            df.at[i, "back_candles"] = True
 
     return df
